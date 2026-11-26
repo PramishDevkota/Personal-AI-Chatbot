@@ -1,59 +1,20 @@
-from fastapi import FastAPI, HTTPException
-import httpx
 
+from fastapi import FastAPI
+from routers.chat import router as chat_router
 
-app = FastAPI(title="Cortex AI Chatbot")
+app = FastAPI(
+    title="Cortex AI Chatbot",
+    description="A local AI chatbot powered by Ollama",
+    version="1.0.0"
+)
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "qwen3:0.6b"
 
 @app.get("/")
 async def home():
-    return {"message" : "Cortex AI is running"}
-
-@app.post("/chat")
-async def chat(message: str):
-
-    payload = {
-        "model" : MODEL,
-        "messages": [
-            {
-                "role": "user",
-                "content": message
-            }
-        ],
-        "stream": False
+    return {
+        "message": "Cortex AI is running",
+        "status": "online"
     }
-    try: 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                OLLAMA_URL,
-                json=payload
-        )
 
-            response.raise_for_status()
 
-            # Inspect the raw response before parsing JSON
-            print("OLLAMA RESPONSE:", response.text[:500])
-
-            result = response.json()
-
-            return {
-                "user_message": message,
-                "response": result["message"]["content"]
-            }
-
-            result = response.json()
-
-            return {
-                "user_message": message,
-                "response": result["message"]["content"]
-            }
-    except httpx.HTTPError as error:
-        raise HTTPException(status_code=502, detail=str(error))
-
-    except (ValueError, KeyError) as error:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Invalid Ollama response: {error}"
-        )
+app.include_router(chat_router)
